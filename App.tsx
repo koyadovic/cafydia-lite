@@ -5,7 +5,6 @@ import {
   TextInput,
   Button,
   FlatList,
-  StyleSheet,
   Alert,
   ScrollView,
   Modal,
@@ -13,7 +12,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { appStyles } from './AppStyles';
 
 
 interface FoodItem {
@@ -35,31 +34,26 @@ const defaultParameters = {
 };
 
 const App: React.FC = () => {
-  // Configuración inicial
   const [parameters, setParameters] = useState(defaultParameters);
-
-  const [foodItems, setFoodItems] = useState<FoodItem[]>([]); // Alimentos seleccionados
-  const [percentage, setPercentage] = useState<string>(''); // Porcentaje de hidratos
-  const [grams, setGrams] = useState<string>(''); // Gramos del alimento
-  const [glucoseBeforeMeal, setGlucoseBeforeMeal] = useState<string>(''); // Glucosa antes de comer
+  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+  const [percentage, setPercentage] = useState<string>('');
+  const [grams, setGrams] = useState<string>('');
+  const [glucoseBeforeMeal, setGlucoseBeforeMeal] = useState<string>('');
   const [mealType, setMealType] = useState<'desayuno' | 'comida' | 'cena'>(determineMealType());
-  const [showConfigModal, setShowConfigModal] = useState(false); // Mostrar modal de configuración
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   function determineMealType(): 'desayuno' | 'comida' | 'cena' {
     const hour = new Date().getHours();
     if(hour < 5 || hour > 16) {
       return 'cena';
     }
-
     if (hour < 12) {
       return 'desayuno';
     }
-
     return 'comida';
   }
 
   useEffect(() => {
-    // Cargar configuraciones al inicio
     const loadParameters = async () => {
       try {
         const jsonValue = await AsyncStorage.getItem('parameters');
@@ -112,19 +106,19 @@ const App: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={appStyles.container}>
       <TouchableOpacity
-        style={styles.settingsButton}
+        style={appStyles.settingsButton}
         onPress={() => setShowConfigModal(true)}
       >
-        <Text>⚙️</Text>
+        <Text style={appStyles.emoji}>⚙️</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Cafydia Lite</Text>
+      <Text style={appStyles.title}>Cafydia Lite</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Tipo de comida</Text>
+      <ScrollView contentContainerStyle={appStyles.scrollContainer}>
+        <View style={appStyles.section}>
+          <Text style={appStyles.subtitle}>Tipo de comida</Text>
           <Picker
             selectedValue={mealType}
             onValueChange={(itemValue) => {
@@ -141,28 +135,28 @@ const App: React.FC = () => {
           </Picker>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Glucosa antes de comer</Text>
+        <View style={appStyles.section}>
+          <Text style={appStyles.subtitle}>Glucosa antes de comer</Text>
           <TextInput
-            style={styles.input}
-            placeholder="Glucosa mg/dL (by default 100mg/dL)"
+            style={appStyles.input}
+            placeholder="mg/dL (vacío es 100mg/dL)"
             keyboardType="numeric"
             value={glucoseBeforeMeal}
             onChangeText={setGlucoseBeforeMeal}
           />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Añadir alimento</Text>
+        <View style={appStyles.section}>
+          <Text style={appStyles.subtitle}>Añadir alimento</Text>
           <TextInput
-            style={styles.input}
-            placeholder="% Hidratos (por defecto 100%)"
+            style={appStyles.input}
+            placeholder="% Hidratos (vacío es 100%)"
             keyboardType="numeric"
             value={percentage}
             onChangeText={setPercentage}
           />
           <TextInput
-            style={styles.input}
+            style={appStyles.input}
             placeholder="Gramos"
             keyboardType="numeric"
             value={grams}
@@ -194,16 +188,16 @@ const App: React.FC = () => {
           data={foodItems}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.listItemContainer}>
-              <Text style={styles.listItem}>
-                {item.grams}g de {item.percentage}% = {((item.percentage / 100) * item.grams).toFixed(2)}g de hidratos
+            <View style={appStyles.listItemContainer}>
+              <Text style={appStyles.listItem}>
+                🥩 {item.grams}g ({item.percentage}%) = {((item.percentage / 100) * item.grams).toFixed(1)}g CH
               </Text>
-              <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.deleteButton}>
-                <Text style={styles.deleteText}>❌</Text>
+              <TouchableOpacity onPress={() => removeItem(item.id)} style={appStyles.deleteButton}>
+                <Text style={appStyles.deleteText}>🗑️</Text>
               </TouchableOpacity>
             </View>
           )}
-          ListEmptyComponent={<Text style={styles.emptyList}>No hay alimentos añadidos.</Text>}
+          ListEmptyComponent={<Text style={appStyles.emptyList}>No hay alimentos añadidos.</Text>}
         />
 
         <Button title="Calcular dosis" onPress={calculateDose} />
@@ -214,14 +208,14 @@ const App: React.FC = () => {
         animationType="slide"
         onRequestClose={() => setShowConfigModal(false)}
       >
-        <ScrollView contentContainerStyle={styles.modalContainer}>
-          <Text style={styles.subtitle}>Configuración</Text>
+        <ScrollView contentContainerStyle={appStyles.modalContainer}>
+          <Text style={appStyles.subtitle}>Configuración</Text>
 
           {Object.keys(parameters).map((key) => (
-            <View key={key} style={styles.configItem}>
-              <Text style={styles.label}>{key}</Text>
+            <View key={key} style={appStyles.configItem}>
+              <Text style={appStyles.label}>{key}</Text>
               <TextInput
-                style={styles.input}
+                style={appStyles.input}
                 keyboardType="numeric"
                 value={parameters[key as keyof typeof parameters].toString()}
                 onChangeText={(value) =>
@@ -241,83 +235,5 @@ const App: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f4f4f4',
-  },
-  listItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-  },
-  deleteButton: {
-    padding: 5,
-  },
-  deleteText: {
-    fontSize: 18,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  listItem: {
-    flex: 1,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-  },
-  emptyList: {
-    textAlign: 'center',
-    marginVertical: 20,
-    fontStyle: 'italic',
-    color: '#888',
-  },
-  settingsButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 1,
-  },
-  modalContainer: {
-    flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  configItem: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-});
 
 export default App;
