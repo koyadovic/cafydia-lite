@@ -118,7 +118,7 @@ const App: React.FC = () => {
         <Text>⚙️</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>CafydiaLite</Text>
+      <Text style={styles.title}>Cafydia Lite</Text>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.section}>

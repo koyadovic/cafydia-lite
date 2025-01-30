@@ -1,4 +1,4 @@
-# CafydiaLite
+# Cafydia Lite
 
 Este proyecto incluye un **Makefile** que simplifica las tareas comunes de construcción, instalación y limpieza de la aplicación Android.
 
