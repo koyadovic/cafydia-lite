@@ -105,13 +105,17 @@ const App: React.FC = () => {
     Alert.alert('Dosis recomendada', recommendation);
   };
 
+  const removeItem = (id: string) => {
+    setFoodItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.settingsButton}
         onPress={() => setShowConfigModal(true)}
       >
-        <Text>Settings</Text>
+        <Text>⚙️</Text>
       </TouchableOpacity>
 
       <Text style={styles.title}>CafydiaLite</Text>
@@ -139,7 +143,7 @@ const App: React.FC = () => {
           <Text style={styles.subtitle}>Glucosa antes de comer</Text>
           <TextInput
             style={styles.input}
-            placeholder="Glucosa (mg/dL)"
+            placeholder="Glucosa mg/dL (by default 100mg/dL)"
             keyboardType="numeric"
             value={glucoseBeforeMeal}
             onChangeText={setGlucoseBeforeMeal}
@@ -150,7 +154,7 @@ const App: React.FC = () => {
           <Text style={styles.subtitle}>Añadir alimento</Text>
           <TextInput
             style={styles.input}
-            placeholder="% Hidratos"
+            placeholder="% Hidratos (por defecto 100%)"
             keyboardType="numeric"
             value={percentage}
             onChangeText={setPercentage}
@@ -165,7 +169,7 @@ const App: React.FC = () => {
           <Button
             title="Añadir alimento"
             onPress={() => {
-              const parsedPercentage = parseFloat(percentage);
+              const parsedPercentage = parseFloat(percentage) || 100.0;
               const parsedGrams = parseFloat(grams);
 
               if (isNaN(parsedPercentage) || isNaN(parsedGrams)) {
@@ -188,13 +192,14 @@ const App: React.FC = () => {
           data={foodItems}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            item ? (
+            <View style={styles.listItemContainer}>
               <Text style={styles.listItem}>
                 {item.grams}g de {item.percentage}% = {((item.percentage / 100) * item.grams).toFixed(2)}g de hidratos
+                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.deleteButton}>
+                  <Text style={styles.deleteText}>❌</Text>
+                </TouchableOpacity>
               </Text>
-            ) : (
-              <Text style={styles.listItem}>Elemento inválido</Text>
-            )
+            </View>
           )}
           ListEmptyComponent={<Text style={styles.emptyList}>No hay alimentos añadidos.</Text>}
         />
@@ -239,6 +244,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f4f4f4',
+  },
+  listItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  deleteButton: {
+    marginRight: 10,
+    padding: 5,
+  },
+  deleteText: {
+    fontSize: 18,
   },
   scrollContainer: {
     flexGrow: 1,
