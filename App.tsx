@@ -41,19 +41,21 @@ const App: React.FC = () => {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]); // Alimentos seleccionados
   const [percentage, setPercentage] = useState<string>(''); // Porcentaje de hidratos
   const [grams, setGrams] = useState<string>(''); // Gramos del alimento
-  const [glucoseBeforeMeal, setGlucoseBeforeMeal] = useState<string>('100'); // Glucosa antes de comer
+  const [glucoseBeforeMeal, setGlucoseBeforeMeal] = useState<string>(''); // Glucosa antes de comer
   const [mealType, setMealType] = useState<'desayuno' | 'comida' | 'cena'>(determineMealType());
   const [showConfigModal, setShowConfigModal] = useState(false); // Mostrar modal de configuración
 
   function determineMealType(): 'desayuno' | 'comida' | 'cena' {
     const hour = new Date().getHours();
-    if (hour >= 7 && hour < 11) {
-      return 'desayuno';
-    } else if (hour >= 12 && hour < 16) {
-      return 'comida';
-    } else {
+    if(hour < 5 || hour > 16) {
       return 'cena';
     }
+
+    if (hour < 12) {
+      return 'desayuno';
+    }
+
+    return 'comida';
   }
 
   useEffect(() => {
@@ -195,10 +197,10 @@ const App: React.FC = () => {
             <View style={styles.listItemContainer}>
               <Text style={styles.listItem}>
                 {item.grams}g de {item.percentage}% = {((item.percentage / 100) * item.grams).toFixed(2)}g de hidratos
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.deleteButton}>
-                  <Text style={styles.deleteText}>❌</Text>
-                </TouchableOpacity>
               </Text>
+              <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.deleteButton}>
+                <Text style={styles.deleteText}>❌</Text>
+              </TouchableOpacity>
             </View>
           )}
           ListEmptyComponent={<Text style={styles.emptyList}>No hay alimentos añadidos.</Text>}
@@ -248,10 +250,13 @@ const styles = StyleSheet.create({
   listItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
   },
   deleteButton: {
-    marginRight: 10,
     padding: 5,
   },
   deleteText: {
@@ -283,9 +288,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   listItem: {
-    padding: 10,
+    flex: 1,
+    fontSize: 16,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
     borderColor: '#ddd',
   },
   emptyList: {
