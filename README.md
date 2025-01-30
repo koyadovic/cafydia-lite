@@ -1,16 +1,21 @@
-# CafydiaLite - Instrucciones de Uso del Makefile
+# CafydiaLite
 
 Este proyecto incluye un **Makefile** que simplifica las tareas comunes de construcción, instalación y limpieza de la aplicación Android.
 
-Para comenzar y tener todo listo instala todo con `npm i`. Necesario el JDK 17 de oracle (`jdk-17.0.12_linux-x64_bin.deb`).
+## Requisitos
 
+Antes de comenzar, asegúrate de tener instalados los siguientes componentes:
+
+- **Node.js** y **npm**  
+  ```bash
+  $ node -v
+  v18.19.0
+
+  $ npm -v
+  9.2.0
+- **Java Development Kit** (JDK 17 de Oracle). Versión recomendada: `jdk-17.0.12_linux-x64_bin.deb`
+- **Gradle**
 ```bash
-$ node -v
-v18.19.0
-
-$ npm -v
-9.2.0
-
 $ android/gradlew -v
 
 ------------------------------------------------------------
@@ -28,15 +33,20 @@ Daemon JVM:    /usr/lib/jvm/jdk-11.0.26-oracle-x64 (no JDK specified, using curr
 OS:            Linux 6.1.0-30-amd64 amd64
 ```
 
-## TLTR
-Ejecuta `make build` para construir y `make install` para instalarlo en emulador o en un dispositivo android conectado al computador.
+## Uso rápido (TL;DR)
+Ejecuta los siguientes comandos para compilar e instalar la aplicación en un dispositivo Android o emulador:
+
+```bash
+make build    # Compila la aplicación (siempre limpia antes de compilar)
+make install  # Instala la APK en un dispositivo/emulador conectado
+```
 
 ---
 
 ## Comandos Disponibles
 
 ### **`make clean`**
-Este comando limpia los archivos de construcción generados previamente por Gradle.
+Limpia los archivos de construcción generados previamente por Gradle.
 
 #### Uso:
 ```bash
@@ -58,9 +68,10 @@ make build
 ```
 
 #### ¿Qué hace?
-1. Genera el paquete de JavaScript (`index.android.bundle`) necesario para la aplicación.
-2. Construye el APK en modo **debug**.
-3. Coloca el APK en el directorio:
+1. Ejecuta una limpieza (make clean) antes de compilar.
+2. Genera el paquete de JavaScript (`index.android.bundle`) necesario para la aplicación.
+3. Construye el APK en modo **debug**.
+4. Coloca el APK en el directorio:
    ```
    android/app/build/outputs/apk/debug/app-debug.apk
    ```
@@ -89,21 +100,12 @@ make install
 ---
 
 ## Flujo de Trabajo Recomendado
-1. Limpia cualquier archivo de construcción previo:
-   ```bash
-   make clean
-   ```
-2. Construye el APK:
+1. Construye el APK:
    ```bash
    make build
    ```
-3. Instala el APK en tu dispositivo/emulador:
+2. Instala el APK en tu dispositivo/emulador:
    ```bash
    make install
    ```
-4. Ejecuta la aplicación desde el emulador o dispositivo conectado.
-
----
-
-Si tienes alguna pregunta o encuentras problemas durante estos pasos, no dudes en pedir ayuda. ¡Feliz desarrollo! 😊
-
+3. Ejecuta la aplicación desde el emulador o dispositivo conectado.
