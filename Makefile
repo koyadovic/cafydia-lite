@@ -1,13 +1,11 @@
-# Makefile for CafydiaLite
-
 # Paths
 ANDROID_DIR := android
 APK_DEBUG := $(ANDROID_DIR)/app/build/outputs/apk/debug/app-debug.apk
 
 .PHONY: build install clean devel
 
-# Build the APK in debug mode
-build:
+# Build the APK in debug mode (siempre limpia antes de compilar)
+build: clean
 	# Generate the JavaScript bundle first
 	npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
 	# Build the APK

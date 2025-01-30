@@ -2,9 +2,34 @@
 
 Este proyecto incluye un **Makefile** que simplifica las tareas comunes de construcción, instalación y limpieza de la aplicación Android.
 
-Para comenzar y tener todo listo instala todo con `npm i`. Necesario el JDK 17 de oracle.
+Para comenzar y tener todo listo instala todo con `npm i`. Necesario el JDK 17 de oracle (`jdk-17.0.12_linux-x64_bin.deb`).
 
-A continuación, se explican los comandos disponibles:
+```bash
+$ node -v
+v18.19.0
+
+$ npm -v
+9.2.0
+
+$ android/gradlew -v
+
+------------------------------------------------------------
+Gradle 8.10.2
+------------------------------------------------------------
+
+Build time:    2024-09-23 21:28:39 UTC
+Revision:      415adb9e06a516c44b391edff552fd42139443f7
+
+Kotlin:        1.9.24
+Groovy:        3.0.22
+Ant:           Apache Ant(TM) version 1.10.14 compiled on August 16 2023
+Launcher JVM:  11.0.26 (Oracle Corporation 11.0.26+7-LTS-187)
+Daemon JVM:    /usr/lib/jvm/jdk-11.0.26-oracle-x64 (no JDK specified, using current Java home)
+OS:            Linux 6.1.0-30-amd64 amd64
+```
+
+## TLTR
+Ejecuta `make build` para construir y `make install` para instalarlo en emulador o en un dispositivo android conectado al computador.
 
 ---
 
