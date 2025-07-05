@@ -65,6 +65,16 @@ const App: React.FC = () => {
     loadParameters();
   }, []);
 
+  const [paramInputs, setParamInputs] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    setParamInputs(
+      Object.fromEntries(
+        Object.entries(parameters).map(([k, v]) => [k, v.toString()])
+      )
+    );
+  }, [parameters, showConfigModal]);
+
   const saveParameters = async (newParameters: typeof parameters) => {
     setParameters(newParameters);
     try {
@@ -211,24 +221,30 @@ const App: React.FC = () => {
         <ScrollView contentContainerStyle={appStyles.modalContainer}>
           <Text style={appStyles.subtitle}>Configuración</Text>
 
-          {Object.keys(parameters).map((key) => (
+          {Object.keys(paramInputs).map((key) => (
             <View key={key} style={appStyles.configItem}>
               <Text style={appStyles.label}>{key}</Text>
               <TextInput
                 style={appStyles.input}
                 keyboardType="numeric"
-                value={parameters[key as keyof typeof parameters].toString()}
+                value={paramInputs[key]}
                 onChangeText={(value) =>
-                  saveParameters({
-                    ...parameters,
-                    [key]: parseFloat(value) || 0,
-                  })
+                  setParamInputs((prev) => ({ ...prev, [key]: value }))
                 }
               />
             </View>
           ))}
 
-          <Button title="Cerrar configuración" onPress={() => setShowConfigModal(false)} />
+          <Button
+            title="Guardar configuración"
+            onPress={() => {
+              const parsed = Object.fromEntries(
+                Object.entries(paramInputs).map(([k, v]) => [k, parseFloat(v) || 0])
+              );
+              saveParameters(parsed as typeof parameters);
+              setShowConfigModal(false);
+            }}
+          />
         </ScrollView>
       </Modal>
     </View>
