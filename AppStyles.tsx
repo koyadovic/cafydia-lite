@@ -375,6 +375,11 @@ export const appStyles = StyleSheet.create({
         borderRadius: radius.xl,
         padding: spacing.lg,
     },
+    resultScroll: {
+        maxHeight: '90%',
+        flexGrow: 0,
+        borderRadius: radius.xl,
+    },
     resultTitle: {
         fontSize: 20,
         fontWeight: '800',
@@ -426,5 +431,47 @@ export const appStyles = StyleSheet.create({
         fontWeight: '600',
         color: colors.textSecondary,
         marginLeft: spacing.xs,
+    },
+    pendingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.sm + 4,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+    },
+    pendingText: {
+        fontSize: 14,
+        color: colors.text,
+        fontWeight: '600',
+    },
+    pendingAction: {
+        fontSize: 13,
+        color: colors.primary,
+        fontWeight: '700',
+    },
+    proposalHelp: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginTop: spacing.md,
+        lineHeight: 18,
+    },
+    proposalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+    },
+    proposalValue: {
+        color: colors.primary,
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    disabledButton: {
+        opacity: 0.45,
+    },
+    spacedLabel: {
+        marginTop: spacing.md,
     },
 });

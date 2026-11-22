@@ -1,5 +1,31 @@
 # Cafydia Lite
 
+## Autoajuste
+
+En Configuración puedes activar el autoajuste. Cada activación inicia una sesión nueva;
+las comidas y mediciones de sesiones anteriores permanecen en la base de datos SQLite
+local. Al confirmar una recomendación, indica la dosis de rápida que realmente te
+administraste y pulsa el botón al comenzar a comer. La app pedirá la glucosa 90 minutos
+después. Si Android no permite mostrar el aviso, la medición seguirá visible en
+«Glucosas pendientes».
+
+Si dejas vacía la glucosa previa, se usa y se registra 100 mg/dL. Cualquier valor
+positivo introducido se aplica a la misma fórmula de corrección con `fc`, tanto si
+está por debajo como por encima de 100 mg/dL.
+
+La propuesta de `m`, los tres bolos base y `fc` se recalcula al introducir cada
+medición, usando solo comidas de la sesión activa. Lecturas tardías o con factores
+añadidos se conservan, pero no se usan para el ajuste inicial. La propuesta permanece
+separada de los parámetros activos hasta pulsar «Aplicar valores propuestos». Si los
+datos aún no permiten separar los parámetros, la app muestra el motivo y mantiene los
+valores actuales. Una glucosa a los 90 minutos no representa una indicación de
+corrección inmediata.
+
+El primer modelo exige al menos 18 registros utilizables, con ejemplos de desayuno,
+comida y cena y variedad suficiente en hidratos, glucosa previa y dosis real. Es un
+umbral técnico para evitar ajustes basados en datos casi idénticos; no valida por sí
+solo la seguridad clínica de los valores propuestos.
+
 Este proyecto incluye un **Makefile** que simplifica las tareas comunes de construcción, instalación y limpieza de la aplicación Android.
 
 ## Requisitos
@@ -60,7 +86,7 @@ make clean
 ---
 
 ### **`make build`**
-Este comando genera un **APK debug** listo para ser instalado en un emulador o dispositivo.
+Este comando genera un APK no depurable listo para ser instalado en un emulador o dispositivo.
 
 #### Uso:
 ```bash
@@ -70,10 +96,10 @@ make build
 #### ¿Qué hace?
 1. Ejecuta una limpieza (make clean) antes de compilar.
 2. Genera el paquete de JavaScript (`index.android.bundle`) necesario para la aplicación.
-3. Construye el APK en modo **debug**.
+3. Construye el APK en modo **release**.
 4. Coloca el APK en el directorio:
    ```
-   android/app/build/outputs/apk/debug/app-debug.apk
+   android/app/build/outputs/apk/release/app-release.apk
    ```
 
 #### Notas:
