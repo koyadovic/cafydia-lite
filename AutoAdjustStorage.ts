@@ -45,6 +45,7 @@ export interface SavedMeal {
   startedAt: number;
   dueAt: number;
   preGlucose: number;
+  preGlucoseEntered: boolean;
   carbs: number;
   recommendedRapid: number;
   actualRapid: number;
@@ -82,7 +83,7 @@ export function initializeStorage(): Promise<void> {
       await db.execute(`CREATE TABLE IF NOT EXISTS meals (
         id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES auto_adjust_sessions(id),
         meal_type TEXT NOT NULL, started_at INTEGER NOT NULL, due_at INTEGER NOT NULL,
-        pre_glucose REAL, carbs REAL NOT NULL, recommended_rapid REAL NOT NULL,
+        pre_glucose REAL, pre_glucose_entered INTEGER, carbs REAL NOT NULL, recommended_rapid REAL NOT NULL,
         actual_rapid REAL NOT NULL, basal_recommended REAL NOT NULL,
         parameter_version_id TEXT NOT NULL REFERENCES parameter_versions(id),
         context_flag INTEGER NOT NULL DEFAULT 0, context_note TEXT,
@@ -91,6 +92,9 @@ export function initializeStorage(): Promise<void> {
       )`);
       const mealColumns = await db.execute('PRAGMA table_info(meals)');
       const names = mealColumns.rows.map(row => String(row.name));
+      if (!names.includes('pre_glucose_entered')) {
+        await db.execute('ALTER TABLE meals ADD COLUMN pre_glucose_entered INTEGER');
+      }
       if (!names.includes('context_note')) {
         await db.execute('ALTER TABLE meals ADD COLUMN context_note TEXT');
       }
@@ -258,9 +262,9 @@ export async function saveMeal(
   };
   await db.transaction(async tx => {
     await tx.execute(
-      `INSERT INTO meals(id, session_id, meal_type, started_at, due_at, pre_glucose, carbs,
+      `INSERT INTO meals(id, session_id, meal_type, started_at, due_at, pre_glucose, pre_glucose_entered, carbs,
       recommended_rapid, actual_rapid, basal_recommended, parameter_version_id)
-      VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         meal.id,
         sessionId,
@@ -268,6 +272,7 @@ export async function saveMeal(
         meal.startedAt,
         meal.dueAt,
         meal.preGlucose,
+        meal.preGlucoseEntered ? 1 : 0,
         meal.carbs,
         meal.recommendedRapid,
         meal.actualRapid,

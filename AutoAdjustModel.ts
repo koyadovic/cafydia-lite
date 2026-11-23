@@ -27,7 +27,6 @@ export interface ModelProposal {
   meanAbsoluteError: number | null;
 }
 
-const mealTypes: MealType[] = ['desayuno', 'comida', 'cena'];
 const TARGET = 135;
 
 function solve(matrix: number[][], vector: number[]): number[] | null {
@@ -77,7 +76,11 @@ function features(item: MealObservation): number[] {
   ];
 }
 
-function fit(items: MealObservation[], weights: number[]): number[] | null {
+function fit(
+  items: MealObservation[],
+  weights: number[],
+  prior: number[],
+): number[] | null {
   const dimension = 6;
   const matrix = Array.from({length: dimension}, () =>
     Array(dimension).fill(0),
@@ -93,9 +96,10 @@ function fit(items: MealObservation[], weights: number[]): number[] | null {
       }
     }
   });
-  // A small ridge term stabilizes the fit without imposing a guessed insulin action time.
+  // Regularize toward the active formula so even a single meal has a finite proposal.
   for (let i = 0; i < dimension; i += 1) {
     matrix[i][i] += 0.05;
+    vector[i] += 0.05 * prior[i];
   }
   return solve(matrix, vector);
 }
@@ -164,69 +168,37 @@ export function proposeParameters(
         item.rapidActual,
         item.glucoseAfter,
       ].every(Number.isFinite) &&
-      item.carbs > 0 &&
+      item.carbs >= 0 &&
       item.glucoseBefore > 0 &&
       item.rapidActual >= 0 &&
       item.glucoseAfter > 0,
   );
   const usable = usableItems.length;
   const total = items.length;
-  if (
-    usable < 18 ||
-    mealTypes.some(
-      meal => usableItems.filter(item => item.mealType === meal).length < 4,
-    )
-  ) {
+  if (usable === 0) {
     return insufficient(
       current,
       usable,
       total,
-      'Se necesitan más comidas completas de los tres tipos.',
+      'No hay mediciones utilizables alrededor de los 90 minutos.',
     );
   }
-  const carbs = usableItems.map(item => item.carbs);
-  const glucose = usableItems.map(item => item.glucoseBefore);
-  const doseDifferences = usableItems.map(item => {
-    const b = current[`${item.mealType}_b` as keyof DoseParameters];
-    return (
-      item.rapidActual -
-      (current.m * item.carbs + b + (item.glucoseBefore - 100) / current.fc)
-    );
-  });
-  const spread = (values: number[]) => {
-    const range = values.reduce(
-      (acc, value) => ({
-        min: Math.min(acc.min, value),
-        max: Math.max(acc.max, value),
-      }),
-      {min: Infinity, max: -Infinity},
-    );
-    return range.max - range.min;
-  };
-  if (
-    spread(carbs) < 30 ||
-    spread(glucose) < 30 ||
-    spread(doseDifferences) < 1.5
-  ) {
-    return insufficient(
-      current,
-      usable,
-      total,
-      'Falta variedad de hidratos, glucosa previa o dosis reales para separar los parámetros.',
-    );
-  }
-  if (!independentFeatures(usableItems)) {
-    return insufficient(
-      current,
-      usable,
-      total,
-      'Las dosis siguen demasiado de cerca la fórmula actual para separar sus efectos.',
-    );
-  }
+
+  // The current correction factor is only a starting estimate for the
+  // 90-minute glucose change per unit; observations can move all coefficients.
+  const prior = [
+    50 * current.fc * current.m,
+    current.fc * current.desayuno_b,
+    current.fc * current.comida_b,
+    current.fc * current.cena_b,
+    50,
+    10 * current.fc,
+  ];
 
   let coefficients = fit(
     usableItems,
     usableItems.map(() => 1),
+    prior,
   );
   if (!coefficients) {
     return insufficient(
@@ -248,7 +220,7 @@ export function proposeParameters(
         );
       return Math.min(1, 35 / Math.max(Math.abs(residual), 1));
     });
-    coefficients = fit(usableItems, weights);
+    coefficients = fit(usableItems, weights, prior);
     if (!coefficients) {
       return insufficient(
         current,
@@ -278,33 +250,13 @@ export function proposeParameters(
   if (
     Object.values(raw).some(value => !Number.isFinite(value)) ||
     raw.m <= 0 ||
-    raw.fc <= 0 ||
-    ['desayuno_b', 'comida_b', 'cena_b'].some(
-      key => raw[key as keyof DoseParameters] < 0,
-    )
+    raw.fc <= 0
   ) {
     return insufficient(
       current,
       usable,
       total,
       'Los coeficientes estimados quedan fuera de los límites válidos.',
-    );
-  }
-  const changedTooMuch = (Object.keys(raw) as (keyof DoseParameters)[]).some(
-    key => {
-      const difference = Math.abs(raw[key] - current[key]);
-      return (
-        difference >
-        Math.max(Math.abs(current[key]) * 0.25, key.endsWith('_b') ? 1 : 0)
-      );
-    },
-  );
-  if (changedTooMuch) {
-    return insufficient(
-      current,
-      usable,
-      total,
-      'El cambio estimado es demasiado grande; hacen falta más observaciones.',
     );
   }
   const meanAbsoluteError =
@@ -323,7 +275,9 @@ export function proposeParameters(
     usable,
     total,
     status: 'ready',
-    reason: 'Propuesta exploratoria pendiente de aplicar.',
+    reason: independentFeatures(usableItems)
+      ? 'Propuesta exploratoria pendiente de aplicar.'
+      : 'Propuesta preliminar: faltan variaciones para separar todos los parámetros.',
     meanAbsoluteError,
   };
 }

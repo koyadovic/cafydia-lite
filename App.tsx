@@ -108,6 +108,9 @@ const paramGroups: {
     ],
   },
 ];
+const parameterKeys = paramGroups.flatMap(group =>
+  group.items.map(item => item.key),
+);
 
 function determineMealType(): MealType {
   const hour = new Date().getHours();
@@ -136,6 +139,7 @@ const App: React.FC = () => {
     carbs: number;
     meal: MealType;
     preGlucose: number;
+    preGlucoseEntered: boolean;
     foods: FoodItem[];
   } | null>(null);
   const [actualRapid, setActualRapid] = useState('');
@@ -245,11 +249,16 @@ const App: React.FC = () => {
     }
   };
 
-  const parseNumber = (value: string): number | null => {
+  const parseNumber = (value: string, allowNegative = false): number | null => {
     const trimmed = value.trim();
-    return /^\d+(?:[.,]\d+)?$/.test(trimmed)
-      ? Number(trimmed.replace(',', '.'))
-      : null;
+    const pattern = allowNegative
+      ? /^-?\d+(?:[.,]\d+)?$/
+      : /^\d+(?:[.,]\d+)?$/;
+    if (!pattern.test(trimmed)) {
+      return null;
+    }
+    const parsed = Number(trimmed.replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : null;
   };
 
   const toggleAutoAdjust = async (enabled: boolean) => {
@@ -328,6 +337,7 @@ const App: React.FC = () => {
       carbs: totalCarbs,
       meal: mealType,
       preGlucose: glucose,
+      preGlucoseEntered: glucoseBeforeMeal.trim() !== '',
       foods: [...foodItems],
     });
   };
@@ -355,6 +365,7 @@ const App: React.FC = () => {
         mealType: result.meal,
         startedAt,
         preGlucose: result.preGlucose,
+        preGlucoseEntered: result.preGlucoseEntered,
         carbs: result.carbs,
         recommendedRapid: result.fast,
         actualRapid: actual,
@@ -512,6 +523,7 @@ const App: React.FC = () => {
         </View>
         <TouchableOpacity
           style={appStyles.settingsButton}
+          testID="open-settings"
           onPress={() => setShowConfigModal(true)}
           activeOpacity={0.7}
           disabled={!ready}>
@@ -531,6 +543,7 @@ const App: React.FC = () => {
                 <TouchableOpacity
                   key={opt.key}
                   style={[appStyles.segment, active && appStyles.segmentActive]}
+                  testID={`meal-${opt.key}`}
                   onPress={() => setMealType(opt.key)}
                   activeOpacity={0.7}>
                   <Text style={appStyles.segmentEmoji}>{opt.emoji}</Text>
@@ -786,7 +799,7 @@ const App: React.FC = () => {
                   <>
                     <Text style={appStyles.proposalHelp}>
                       {proposal
-                        ? `${proposal.usable} comidas utilizables · ${proposal.reason}`
+                        ? `${proposal.usable} de ${proposal.total} comidas usadas · ${proposal.reason}`
                         : 'Aún no hay mediciones completas.'}
                     </Text>
                     {proposal?.meanAbsoluteError !== null &&
@@ -871,6 +884,7 @@ const App: React.FC = () => {
                         <TextInput
                           style={appStyles.configInput}
                           keyboardType="numeric"
+                          testID={`parameter-${item.key}`}
                           value={paramInputs[item.key] ?? ''}
                           onChangeText={v =>
                             setParamInputs(prev => ({...prev, [item.key]: v}))
@@ -888,12 +902,18 @@ const App: React.FC = () => {
           <View style={appStyles.modalFooter}>
             <TouchableOpacity
               style={appStyles.primaryButton}
+              testID="save-settings"
               activeOpacity={0.85}
               onPress={async () => {
                 const parsed = Object.fromEntries(
-                  Object.entries(paramInputs).map(([key, value]) => [
+                  parameterKeys.map(key => [
                     key,
-                    parseNumber(value),
+                    parseNumber(
+                      paramInputs[key] ?? '',
+                      key === 'desayuno_b' ||
+                        key === 'comida_b' ||
+                        key === 'cena_b',
+                    ),
                   ]),
                 ) as Record<ParamKey, number | null>;
                 if (
@@ -902,13 +922,13 @@ const App: React.FC = () => {
                   parsed.m <= 0 ||
                   parsed.fc === null ||
                   parsed.fc <= 0 ||
-                  Object.values(parsed).some(
-                    value => value !== null && value < 0,
-                  )
+                  parsed.basal_desayunos! < 0 ||
+                  parsed.basal_comidas! < 0 ||
+                  parsed.basal_cenas! < 0
                 ) {
                   Alert.alert(
                     'Error',
-                    'Revisa los parámetros: m y fc deben ser positivos y los demás no negativos.',
+                    'Revisa los parámetros: m y fc deben ser positivos y la basal no puede ser negativa. Los bolos base sí admiten valores negativos.',
                   );
                   return;
                 }

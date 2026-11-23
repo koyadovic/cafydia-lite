@@ -9,7 +9,8 @@ administraste y pulsa el botón al comenzar a comer. La app pedirá la glucosa 9
 después. Si Android no permite mostrar el aviso, la medición seguirá visible en
 «Glucosas pendientes».
 
-Si dejas vacía la glucosa previa, se usa y se registra 100 mg/dL. Cualquier valor
+Si dejas vacía la glucosa previa, se usa y se registra 100 mg/dL; también se guarda
+si ese valor se introdujo o se asumió. Cualquier valor
 positivo introducido se aplica a la misma fórmula de corrección con `fc`, tanto si
 está por debajo como por encima de 100 mg/dL.
 
@@ -17,14 +18,14 @@ La propuesta de `m`, los tres bolos base y `fc` se recalcula al introducir cada
 medición, usando solo comidas de la sesión activa. Lecturas tardías o con factores
 añadidos se conservan, pero no se usan para el ajuste inicial. La propuesta permanece
 separada de los parámetros activos hasta pulsar «Aplicar valores propuestos». Si los
-datos aún no permiten separar los parámetros, la app muestra el motivo y mantiene los
-valores actuales. Una glucosa a los 90 minutos no representa una indicación de
+datos aún no permiten separar los parámetros, la app avisa de que la propuesta es
+preliminar. Una glucosa a los 90 minutos no representa una indicación de
 corrección inmediata.
 
-El primer modelo exige al menos 18 registros utilizables, con ejemplos de desayuno,
-comida y cena y variedad suficiente en hidratos, glucosa previa y dosis real. Es un
-umbral técnico para evitar ajustes basados en datos casi idénticos; no valida por sí
-solo la seguridad clínica de los valores propuestos.
+El primer modelo ofrece una propuesta desde la primera medición utilizable, tomando
+los parámetros actuales como punto de partida. Indica cuándo los datos todavía no
+permiten separar bien los parámetros; no impone un mínimo fijo de comidas ni un
+límite porcentual al cambio propuesto. Los bolos base `b` pueden ser negativos.
 
 Este proyecto incluye un **Makefile** que simplifica las tareas comunes de construcción, instalación y limpieza de la aplicación Android.
 

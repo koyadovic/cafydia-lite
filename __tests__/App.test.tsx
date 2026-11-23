@@ -28,6 +28,7 @@ jest.mock('../AutoAdjustStorage', () => ({
     cena_b: 2,
     fc: 15,
   })),
+  saveParameters: jest.fn(async () => {}),
   getActiveSessionId: jest.fn(async () => null),
   listPendingMeals: jest.fn(async () => []),
   loadLatestProposal: jest.fn(async () => null),
@@ -57,6 +58,77 @@ test('renders correctly', async () => {
   await ReactTestRenderer.act(async () => {
     ReactTestRenderer.create(<App />);
   });
+});
+
+test('saves negative base boluses without changing the other parameters', async () => {
+  const storage = require('../AutoAdjustStorage');
+  storage.saveParameters.mockClear();
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<App />);
+  });
+  const root = renderer!.root;
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'open-settings'}).props.onPress();
+  });
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'parameter-comida_b'}).props.onChangeText('-6');
+    root.findByProps({testID: 'parameter-cena_b'}).props.onChangeText('-2,5');
+  });
+  await ReactTestRenderer.act(async () => {
+    await root.findByProps({testID: 'save-settings'}).props.onPress();
+  });
+  expect(storage.saveParameters).toHaveBeenCalledWith(
+    expect.objectContaining({
+      comida_b: -6,
+      cena_b: -2.5,
+      m: 0.187,
+      fc: 15,
+      basal_desayunos: 78,
+    }),
+    'manual',
+    null,
+  );
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'meal-comida'}).props.onPress();
+    root.findByProps({testID: 'food-grams'}).props.onChangeText('50');
+  });
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'add-food'}).props.onPress();
+  });
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'calculate-dose'}).props.onPress();
+  });
+  expect(
+    root
+      .findAllByType(TextInput)
+      .find(
+        input =>
+          input.props.accessibilityLabel === 'Rápida realmente administrada',
+      )?.props.value,
+  ).toBe('3.5');
+  await ReactTestRenderer.act(async () => renderer!.unmount());
+});
+
+test('does not save incomplete settings', async () => {
+  const storage = require('../AutoAdjustStorage');
+  storage.saveParameters.mockClear();
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<App />);
+  });
+  const root = renderer!.root;
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'open-settings'}).props.onPress();
+  });
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'parameter-fc'}).props.onChangeText('');
+  });
+  await ReactTestRenderer.act(async () => {
+    await root.findByProps({testID: 'save-settings'}).props.onPress();
+  });
+  expect(storage.saveParameters).not.toHaveBeenCalled();
+  await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
 test('stores the rapid dose actually administered with the meal', async () => {
@@ -91,12 +163,17 @@ test('stores the rapid dose actually administered with the meal', async () => {
     await root.findByProps({testID: 'confirm-meal'}).props.onPress();
   });
   expect(storage.saveMeal).toHaveBeenCalledWith(
-    expect.objectContaining({preGlucose: 110, carbs: 50, actualRapid: 12}),
+    expect.objectContaining({
+      preGlucose: 110,
+      preGlucoseEntered: true,
+      carbs: 50,
+      actualRapid: 12,
+    }),
   );
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
-test('records a follow-up glucose and leaves insufficient evidence unapplied', async () => {
+test('records a follow-up glucose and offers an unapplied proposal', async () => {
   const storage = require('../AutoAdjustStorage');
   const pending = {
     id: 'meal-2',
@@ -110,6 +187,17 @@ test('records a follow-up glucose and leaves insufficient evidence unapplied', a
   storage.listPendingMeals.mockResolvedValueOnce([]);
   storage.addReading.mockClear();
   storage.saveProposal.mockClear();
+  storage.loadObservations.mockResolvedValueOnce([
+    {
+      mealType: 'cena',
+      carbs: 50,
+      glucoseBefore: 100,
+      rapidActual: 11,
+      glucoseAfter: 150,
+      minutesAfterMeal: 90,
+      contextFlag: false,
+    },
+  ]);
   let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(<App />);
@@ -132,7 +220,7 @@ test('records a follow-up glucose and leaves insufficient evidence unapplied', a
   expect(storage.saveProposal).toHaveBeenCalledWith(
     'session-1',
     'reading-1',
-    expect.objectContaining({status: 'insufficient'}),
+    expect.objectContaining({status: 'ready', usable: 1}),
   );
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
@@ -152,7 +240,7 @@ test('uses 100 when pre-meal glucose is left blank with auto-adjust enabled', as
     await renderer!.root.findByProps({testID: 'confirm-meal'}).props.onPress();
   });
   expect(storage.saveMeal).toHaveBeenCalledWith(
-    expect.objectContaining({preGlucose: 100}),
+    expect.objectContaining({preGlucose: 100, preGlucoseEntered: false}),
   );
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
@@ -184,6 +272,7 @@ test('applies the same correction factor to glucose below 100', async () => {
     saved.mealType as 'desayuno' | 'comida' | 'cena'
   ];
   expect(saved.preGlucose).toBe(65);
+  expect(saved.preGlucoseEntered).toBe(true);
   expect(saved.recommendedRapid).toBe(
     Math.round((50 * 0.187 + b + (65 - 100) / 15) * 2) / 2,
   );
