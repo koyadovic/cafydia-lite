@@ -441,6 +441,8 @@ export const appStyles = StyleSheet.create({
         borderBottomColor: colors.divider,
     },
     pendingText: {
+        flex: 1,
+        marginRight: spacing.sm,
         fontSize: 14,
         color: colors.text,
         fontWeight: '600',

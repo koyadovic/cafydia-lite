@@ -10,7 +10,6 @@ test('offers a preliminary proposal from the first usable glucose reading', () =
     rapidActual: 12,
     glucoseAfter: 150,
     minutesAfterMeal: 90,
-    contextFlag: false,
   };
   const result = proposeParameters([item], current);
   expect(result.status).toBe('ready');
@@ -19,7 +18,7 @@ test('offers a preliminary proposal from the first usable glucose reading', () =
   expect(Object.values(result.values).every(Number.isFinite)).toBe(true);
 });
 
-test('excludes late or confounded readings from the fit', () => {
+test('excludes historical readings measured outside the 90-minute window', () => {
   const item: MealObservation = {
     mealType: 'comida',
     carbs: 40,
@@ -27,14 +26,12 @@ test('excludes late or confounded readings from the fit', () => {
     rapidActual: 12,
     glucoseAfter: 150,
     minutesAfterMeal: 150,
-    contextFlag: false,
   };
-  expect(
-    proposeParameters(
-      [item, {...item, contextFlag: true, minutesAfterMeal: 90}],
-      current,
-    ),
-  ).toMatchObject({status: 'insufficient', usable: 0, total: 2});
+  expect(proposeParameters([item], current)).toMatchObject({
+    status: 'insufficient',
+    usable: 0,
+    total: 1,
+  });
 });
 
 test('marks a dataset with doses on the active formula as preliminary', () => {
@@ -53,7 +50,6 @@ test('marks a dataset with doses on the active formula as preliminary', () => {
       rapidActual,
       glucoseAfter: 135,
       minutesAfterMeal: 90,
-      contextFlag: false,
     };
   });
   expect(proposeParameters(items, current)).toMatchObject({
@@ -91,7 +87,6 @@ test('recovers a small coherent change when meal, glucose and actual dose vary',
       rapidActual,
       glucoseAfter: 135 + 10 * (required - rapidActual),
       minutesAfterMeal: 90,
-      contextFlag: false,
     };
   });
   const result = proposeParameters(items, current);
@@ -129,7 +124,6 @@ test('can propose a negative meal intercept', () => {
       rapidActual,
       glucoseAfter: 135 + 10 * (required - rapidActual),
       minutesAfterMeal: 90,
-      contextFlag: false,
     };
   });
   const result = proposeParameters(items, active);
@@ -160,7 +154,6 @@ test('does not reject a well-supported change larger than 25 percent', () => {
       rapidActual,
       glucoseAfter: 135 + 10 * (required - rapidActual),
       minutesAfterMeal: 90,
-      contextFlag: false,
     };
   });
   const result = proposeParameters(items, current);
@@ -186,7 +179,6 @@ test('keeps a proposal available when dose differences follow the meal type', ()
       rapidActual,
       glucoseAfter: 135,
       minutesAfterMeal: 90,
-      contextFlag: false,
     };
   });
   expect(proposeParameters(items, current)).toMatchObject({

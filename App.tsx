@@ -30,7 +30,6 @@ import {
   loadObservations,
   saveProposal,
   loadLatestProposal,
-  setMealContextFlag,
   skipMealReading,
   type AppParameters,
   type FoodItem,
@@ -123,6 +122,13 @@ function determineMealType(): MealType {
   return 'comida';
 }
 
+function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 const App: React.FC = () => {
   const [parameters, setParameters] =
     useState<AppParameters>(defaultParameters);
@@ -149,9 +155,6 @@ const App: React.FC = () => {
   const [pendingMeals, setPendingMeals] = useState<PendingMeal[]>([]);
   const [selectedMeal, setSelectedMeal] = useState<PendingMeal | null>(null);
   const [glucoseAfter, setGlucoseAfter] = useState('');
-  const [minutesAgo, setMinutesAgo] = useState('');
-  const [contextFlag, setContextFlag] = useState(false);
-  const [contextNote, setContextNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -161,9 +164,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setGlucoseAfter('');
-    setMinutesAgo('');
-    setContextFlag(false);
-    setContextNote('');
   }, [selectedMeal?.id]);
 
   useEffect(() => {
@@ -405,36 +405,17 @@ const App: React.FC = () => {
       Alert.alert('Error', 'Introduce una glucosa válida en mg/dL.');
       return;
     }
-    const enteredMinutes = minutesAgo.trim() ? parseNumber(minutesAgo) : 0;
-    if (
-      enteredMinutes === null ||
-      enteredMinutes < 0 ||
-      enteredMinutes > 720 ||
-      Date.now() - enteredMinutes * 60000 < selectedMeal.startedAt
-    ) {
-      Alert.alert('Error', 'Revisa los minutos desde la medición.');
-      return;
-    }
     setBusy(true);
     try {
-      const measuredAt = Date.now() - enteredMinutes * 60000;
-      await setMealContextFlag(
-        selectedMeal.id,
-        contextFlag,
-        contextNote.trim(),
-      );
       const {readingId, sessionId: mealSession} = await addReading(
         selectedMeal.id,
         glucose,
-        measuredAt,
+        selectedMeal.dueAt,
       );
       await cancelMealReminder(selectedMeal.id).catch(() => {});
       await refreshPending();
       setSelectedMeal(null);
       setGlucoseAfter('');
-      setMinutesAgo('');
-      setContextFlag(false);
-      setContextNote('');
       if (mealSession === sessionId) {
         try {
           const observations = await loadObservations(mealSession);
@@ -466,9 +447,6 @@ const App: React.FC = () => {
       await refreshPending();
       setSelectedMeal(null);
       setGlucoseAfter('');
-      setMinutesAgo('');
-      setContextFlag(false);
-      setContextNote('');
     } catch (_) {
       Alert.alert('Error', 'No se pudo omitir esta medición.');
     } finally {
@@ -677,12 +655,10 @@ const App: React.FC = () => {
                   {
                     mealOptions.find(option => option.key === meal.mealType)
                       ?.label
-                  }{' '}
-                  ·{' '}
-                  {new Date(meal.startedAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  }{' · comida '}
+                  {formatTime(meal.startedAt)}
+                  {'\nGlucosa '}
+                  {formatTime(meal.dueAt)}
                 </Text>
                 <Text style={appStyles.pendingAction}>
                   {Date.now() >= meal.dueAt ? 'Introducir' : 'Pendiente'}
@@ -965,7 +941,8 @@ const App: React.FC = () => {
                 )?.label
               }{' '}
               · {selectedMeal?.carbs.toFixed(1)} g de hidratos · objetivo 135
-              mg/dL
+              mg/dL{'\n'}Glucosa de las{' '}
+              {selectedMeal && formatTime(selectedMeal.dueAt)}
             </Text>
             <Text style={appStyles.proposalHelp}>
               Esta medición sirve para el historial y el ajuste; no indica una
@@ -973,42 +950,13 @@ const App: React.FC = () => {
             </Text>
             <TextInput
               style={appStyles.input}
-              placeholder="Glucosa actual (mg/dL)"
+              placeholder="Glucosa a esa hora (mg/dL)"
               testID="glucose-after"
               keyboardType="numeric"
               value={glucoseAfter}
               onChangeText={setGlucoseAfter}
-              accessibilityLabel="Glucosa actual"
+              accessibilityLabel="Glucosa a la hora prevista"
             />
-            <Text style={[appStyles.inputLabel, appStyles.spacedLabel]}>
-              Si te mediste antes, ¿hace cuántos minutos?
-            </Text>
-            <TextInput
-              style={appStyles.input}
-              placeholder="0"
-              keyboardType="numeric"
-              value={minutesAgo}
-              onChangeText={setMinutesAgo}
-              accessibilityLabel="Minutos desde la medición"
-            />
-            <View style={[appStyles.configRow, appStyles.spacedLabel]}>
-              <Text style={[appStyles.configLabel, appStyles.configTexts]}>
-                Ejercicio, más comida u otra dosis de rápida
-              </Text>
-              <Switch
-                value={contextFlag}
-                onValueChange={setContextFlag}
-                trackColor={{true: colors.primary}}
-              />
-            </View>
-            {contextFlag && (
-              <TextInput
-                style={appStyles.input}
-                placeholder="¿Qué ocurrió? (opcional)"
-                value={contextNote}
-                onChangeText={setContextNote}
-              />
-            )}
             <TouchableOpacity
               style={appStyles.primaryButton}
               onPress={saveAfterGlucose}

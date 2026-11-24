@@ -6,8 +6,10 @@ En Configuración puedes activar el autoajuste. Cada activación inicia una sesi
 las comidas y mediciones de sesiones anteriores permanecen en la base de datos SQLite
 local. Al confirmar una recomendación, indica la dosis de rápida que realmente te
 administraste y pulsa el botón al comenzar a comer. La app pedirá la glucosa 90 minutos
-después. Si Android no permite mostrar el aviso, la medición seguirá visible en
-«Glucosas pendientes».
+después. La lista de pendientes muestra tanto la hora de la comida como la hora de esa
+glucosa. Puedes consultar en el sensor el valor correspondiente a esa hora e introducirlo
+más tarde; la base de datos guarda por separado la hora de la medición y la de registro.
+Si Android no permite mostrar el aviso, la medición seguirá visible en «Glucosas pendientes».
 
 Si dejas vacía la glucosa previa, se usa y se registra 100 mg/dL; también se guarda
 si ese valor se introdujo o se asumió. Cualquier valor
@@ -15,8 +17,7 @@ positivo introducido se aplica a la misma fórmula de corrección con `fc`, tant
 está por debajo como por encima de 100 mg/dL.
 
 La propuesta de `m`, los tres bolos base y `fc` se recalcula al introducir cada
-medición, usando solo comidas de la sesión activa. Lecturas tardías o con factores
-añadidos se conservan, pero no se usan para el ajuste inicial. La propuesta permanece
+medición, usando solo comidas de la sesión activa. La propuesta permanece
 separada de los parámetros activos hasta pulsar «Aplicar valores propuestos». Si los
 datos aún no permiten separar los parámetros, la app avisa de que la propuesta es
 preliminar. Una glucosa a los 90 minutos no representa una indicación de

@@ -7,6 +7,7 @@ APK_RELEASE := $(ANDROID_DIR)/app/build/outputs/apk/release/app-release.apk
 
 # Build a non-debuggable APK for daily use.
 build: clean
+	rm -f $(ANDROID_DIR)/app/src/main/assets/index.android.bundle
 	cd $(ANDROID_DIR) && ./gradlew assembleRelease
 
 # Keep a debug APK available when developing with Metro.

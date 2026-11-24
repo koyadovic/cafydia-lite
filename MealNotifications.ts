@@ -33,8 +33,11 @@ export async function scheduleMealReminder(
     await notifee.createTriggerNotification(
       {
         id: meal.id,
-        title: 'Introduce tu glucosa actual',
-        body: 'Han pasado unos 90 minutos desde el comienzo de la comida.',
+        title: 'Introduce la glucosa de esta comida',
+        body: `Consulta el valor de las ${new Date(meal.dueAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}.`,
         data: {mealId: meal.id},
         android: {channelId: CHANNEL_ID, pressAction: {id: 'default'}},
       },

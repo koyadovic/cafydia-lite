@@ -15,7 +15,6 @@ export interface MealObservation {
   rapidActual: number;
   glucoseAfter: number;
   minutesAfterMeal: number;
-  contextFlag: boolean;
 }
 
 export interface ModelProposal {
@@ -159,7 +158,6 @@ export function proposeParameters(
 ): ModelProposal {
   const usableItems = items.filter(
     item =>
-      !item.contextFlag &&
       item.minutesAfterMeal >= 75 &&
       item.minutesAfterMeal <= 105 &&
       [

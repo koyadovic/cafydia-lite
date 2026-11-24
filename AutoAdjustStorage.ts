@@ -86,7 +86,6 @@ export function initializeStorage(): Promise<void> {
         pre_glucose REAL, pre_glucose_entered INTEGER, carbs REAL NOT NULL, recommended_rapid REAL NOT NULL,
         actual_rapid REAL NOT NULL, basal_recommended REAL NOT NULL,
         parameter_version_id TEXT NOT NULL REFERENCES parameter_versions(id),
-        context_flag INTEGER NOT NULL DEFAULT 0, context_note TEXT,
         followup_skipped_at INTEGER,
         target_pre REAL NOT NULL DEFAULT 100, target_90 REAL NOT NULL DEFAULT 135
       )`);
@@ -94,9 +93,6 @@ export function initializeStorage(): Promise<void> {
       const names = mealColumns.rows.map(row => String(row.name));
       if (!names.includes('pre_glucose_entered')) {
         await db.execute('ALTER TABLE meals ADD COLUMN pre_glucose_entered INTEGER');
-      }
-      if (!names.includes('context_note')) {
-        await db.execute('ALTER TABLE meals ADD COLUMN context_note TEXT');
       }
       if (!names.includes('followup_skipped_at')) {
         await db.execute(
@@ -334,25 +330,13 @@ export async function addReading(
   return {readingId, sessionId: String(meal.rows[0].session_id)};
 }
 
-export async function setMealContextFlag(
-  mealId: string,
-  flagged: boolean,
-  note: string,
-): Promise<void> {
-  await initializeStorage();
-  await db.execute(
-    'UPDATE meals SET context_flag = ?, context_note = ? WHERE id = ?',
-    [flagged ? 1 : 0, flagged ? note : null, mealId],
-  );
-}
-
 export async function loadObservations(
   sessionId: string,
 ): Promise<MealObservation[]> {
   await initializeStorage();
   const result = await db.execute(
     `SELECT m.meal_type, m.carbs, m.pre_glucose, m.actual_rapid,
-      m.context_flag, m.started_at, r.glucose, r.measured_at
+      m.started_at, r.glucose, r.measured_at
     FROM meals m JOIN glucose_readings r ON r.meal_id = m.id AND r.kind = '90min'
     WHERE m.session_id = ? AND m.pre_glucose IS NOT NULL AND r.rowid = (
       SELECT r2.rowid FROM glucose_readings r2 WHERE r2.meal_id = m.id AND r2.kind = '90min'
@@ -368,7 +352,6 @@ export async function loadObservations(
     glucoseAfter: Number(row.glucose),
     minutesAfterMeal:
       (Number(row.measured_at) - Number(row.started_at)) / 60000,
-    contextFlag: Boolean(row.context_flag),
   }));
 }
 

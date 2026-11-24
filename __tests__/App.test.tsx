@@ -4,7 +4,7 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import {TextInput} from 'react-native';
+import {Text, TextInput} from 'react-native';
 import App from '../App';
 
 jest.mock('../AutoAdjustStorage', () => ({
@@ -38,7 +38,6 @@ jest.mock('../AutoAdjustStorage', () => ({
     sessionId: 'session-1',
     dueAt: input.startedAt + 90 * 60000,
   })),
-  setMealContextFlag: jest.fn(async () => {}),
   addReading: jest.fn(async () => ({
     readingId: 'reading-1',
     sessionId: 'session-1',
@@ -195,7 +194,6 @@ test('records a follow-up glucose and offers an unapplied proposal', async () =>
       rapidActual: 11,
       glucoseAfter: 150,
       minutesAfterMeal: 90,
-      contextFlag: false,
     },
   ]);
   let renderer: ReactTestRenderer.ReactTestRenderer;
@@ -203,9 +201,26 @@ test('records a follow-up glucose and offers an unapplied proposal', async () =>
     renderer = ReactTestRenderer.create(<App />);
   });
   const root = renderer!.root;
+  const formatTime = (timestamp: number) =>
+    new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  const pendingText = root
+    .findByProps({testID: 'pending-meal-meal-2'})
+    .findAllByType(Text)
+    .flatMap(node => node.props.children)
+    .join('');
+  expect(pendingText).toContain(`comida ${formatTime(pending.startedAt)}`);
+  expect(pendingText).toContain(`Glucosa ${formatTime(pending.dueAt)}`);
   await ReactTestRenderer.act(async () => {
     root.findByProps({testID: 'pending-meal-meal-2'}).props.onPress();
   });
+  expect(
+    root
+      .findAllByType(TextInput)
+      .filter(input => input.props.accessibilityLabel === 'Minutos desde la medición'),
+  ).toHaveLength(0);
   await ReactTestRenderer.act(async () => {
     root.findByProps({testID: 'glucose-after'}).props.onChangeText('150');
   });
@@ -215,7 +230,7 @@ test('records a follow-up glucose and offers an unapplied proposal', async () =>
   expect(storage.addReading).toHaveBeenCalledWith(
     'meal-2',
     150,
-    expect.any(Number),
+    pending.dueAt,
   );
   expect(storage.saveProposal).toHaveBeenCalledWith(
     'session-1',
