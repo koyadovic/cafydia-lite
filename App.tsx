@@ -110,6 +110,17 @@ const paramGroups: {
 const parameterKeys = paramGroups.flatMap(group =>
   group.items.map(item => item.key),
 );
+const adjustableKeys = [
+  'm',
+  'desayuno_b',
+  'comida_b',
+  'cena_b',
+  'fc',
+] as const;
+
+function roundToFour(value: number): number {
+  return Number(value.toFixed(4));
+}
 
 function determineMealType(): MealType {
   const hour = new Date().getHours();
@@ -785,20 +796,21 @@ const App: React.FC = () => {
                           {proposal.meanAbsoluteError.toFixed(0)} mg/dL.
                         </Text>
                       )}
-                    {(
-                      ['m', 'desayuno_b', 'comida_b', 'cena_b', 'fc'] as const
-                    ).map(key => (
+                    {adjustableKeys.map(key => (
                       <View key={key} style={appStyles.proposalRow}>
                         <Text style={appStyles.configLabel}>{key}</Text>
-                        <Text style={appStyles.proposalValue}>
-                          {parameters[key].toFixed(key === 'm' ? 3 : 2)} →{' '}
-                          {(proposal?.values[key] ?? parameters[key]).toFixed(
-                            key === 'm' ? 3 : 2,
-                          )}
+                        <Text
+                          style={appStyles.proposalValue}
+                          testID={`proposal-value-${key}`}>
+                          {parameters[key].toFixed(4)} →{' '}
+                          {roundToFour(
+                            proposal?.values[key] ?? parameters[key],
+                          ).toFixed(4)}
                         </Text>
                       </View>
                     ))}
                     <TouchableOpacity
+                      testID="apply-proposal"
                       style={[
                         appStyles.primaryButton,
                         proposal?.status !== 'ready' &&
@@ -816,9 +828,15 @@ const App: React.FC = () => {
                             {text: 'Cancelar', style: 'cancel'},
                             {
                               text: 'Aplicar',
-                              onPress: () => {
-                                persistParameters(
-                                  {...parameters, ...proposal.values},
+                              onPress: async () => {
+                                const roundedValues = {...proposal.values};
+                                adjustableKeys.forEach(key => {
+                                  roundedValues[key] = roundToFour(
+                                    proposal.values[key],
+                                  );
+                                });
+                                await persistParameters(
+                                  {...parameters, ...roundedValues},
                                   'auto_adjust_applied',
                                 );
                               },

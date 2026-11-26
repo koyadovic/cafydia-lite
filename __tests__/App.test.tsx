@@ -4,7 +4,7 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import {Text, TextInput} from 'react-native';
+import {Alert, Text, TextInput} from 'react-native';
 import App from '../App';
 
 jest.mock('../AutoAdjustStorage', () => ({
@@ -127,6 +127,61 @@ test('does not save incomplete settings', async () => {
     await root.findByProps({testID: 'save-settings'}).props.onPress();
   });
   expect(storage.saveParameters).not.toHaveBeenCalled();
+  await ReactTestRenderer.act(async () => renderer!.unmount());
+});
+
+test('applies and displays auto-adjusted parameters rounded to four decimals', async () => {
+  const storage = require('../AutoAdjustStorage');
+  storage.getActiveSessionId.mockResolvedValueOnce('session-1');
+  storage.loadLatestProposal.mockResolvedValueOnce({
+    values: {
+      m: 0.187123456,
+      desayuno_b: 10.446316,
+      comida_b: 6.1656753,
+      cena_b: -1.234567,
+      fc: 15.987654,
+    },
+    usable: 1,
+    total: 1,
+    status: 'ready',
+    reason: 'Propuesta preliminar',
+    meanAbsoluteError: 10,
+  });
+  storage.saveParameters.mockClear();
+  const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  let renderer: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<App />);
+  });
+  const root = renderer!.root;
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'open-settings'}).props.onPress();
+  });
+  expect(
+    root.findByProps({testID: 'proposal-value-comida_b'}).props.children.join(''),
+  ).toContain('6.1657');
+  await ReactTestRenderer.act(async () => {
+    root.findByProps({testID: 'apply-proposal'}).props.onPress();
+  });
+  const buttons = alertSpy.mock.calls[alertSpy.mock.calls.length - 1][2];
+  const apply = buttons?.find(button => button.text === 'Aplicar')?.onPress;
+  expect(apply).toBeDefined();
+  await ReactTestRenderer.act(async () => {
+    await apply?.();
+  });
+  expect(storage.saveParameters).toHaveBeenCalledWith(
+    expect.objectContaining({
+      m: 0.1871,
+      desayuno_b: 10.4463,
+      comida_b: 6.1657,
+      cena_b: -1.2346,
+      fc: 15.9877,
+      basal_desayunos: 78,
+    }),
+    'auto_adjust_applied',
+    'session-1',
+  );
+  alertSpy.mockRestore();
   await ReactTestRenderer.act(async () => renderer!.unmount());
 });
 
